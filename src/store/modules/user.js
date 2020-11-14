@@ -1,4 +1,4 @@
-import { login, logout, getInfo, register, modifyInfo } from '@/api/user'
+import { login, logout, getInfo, register, modifyInfo, changePassword } from '@/api/user'
 import { getToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
 
@@ -106,7 +106,7 @@ const actions = {
       })
     })
   },
-  modifyInfo ({ commit, userInfo }) {
+  modifyInfo ({ commit }, userInfo) {
     return new Promise((resolve, reject) => {
       modifyInfo(userInfo).then(response => {
         const { data } = response
@@ -114,6 +114,15 @@ const actions = {
         commit('SET_FULLNAME', data.fullName)
         commit('SET_GENDER', data.gender)
         resolve(data)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+  changePassword ({ commit }, passwordObj) {
+    return new Promise((resolve, reject) => {
+      changePassword(passwordObj).then(response => {
+        resolve()
       }).catch(error => {
         reject(error)
       })

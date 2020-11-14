@@ -34,9 +34,10 @@ router.beforeEach(async (to, from, next) => {
           next({ ...to, replace: true })
         } catch (error) {
           // remove token and go to login page to re-login
+          console.log(error.message, error.stack)
           await store.dispatch('user/resetToken')
           Message({
-            message: error || 'Error',
+            message: 'Error',
             type: 'error',
             duration: 5 * 1000
           })

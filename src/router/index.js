@@ -4,6 +4,7 @@ const Layout = () => import(/* webpackChunkName: "layout" */ '@/layout')
 const Login = () => import(/* webpackChunkName: "login" */ '@/views/login')
 const Register = () => import(/* webpackChunkName: "register" */ '@/views/register')
 const Profile = () => import(/* webpackChunkName: "profile" */ '@/views/profile')
+const Task = () => import(/* webpackChunkName: "task" */ '@/views/task')
 
 Vue.use(VueRouter)
 
@@ -48,13 +49,12 @@ export const constantRoutes = [
 export const asyncRoutes = [
   {
     path: '/task',
-    redirect: '/task',
     component: Layout,
     children: [
       {
         path: 'index',
-        component: Profile,
-        name: 'profile',
+        component: Task,
+        name: 'task',
         meta: {
           title: '我的作业',
           icon: 'el-icon-notebook-1',

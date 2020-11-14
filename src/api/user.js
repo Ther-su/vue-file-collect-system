@@ -20,10 +20,18 @@ export function getInfo () {
     method: 'get'
   })
 }
-export function modifyInfo () {
+export function modifyInfo (data) {
   return request({
     url: '/user/modify',
-    method: 'put'
+    method: 'put',
+    data
+  })
+}
+export function changePassword (data) {
+  return request({
+    url: '/user/password',
+    method: 'put',
+    data
   })
 }
 export function logout () {

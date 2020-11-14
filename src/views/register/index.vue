@@ -80,7 +80,7 @@
             </el-input>
           </el-form-item>
 
-          <el-form-item prop="grade" label="班级">
+          <el-form-item prop="gradeName" label="班级">
             <el-input v-model="adminRegisterForm.gradeName">
               <span class="svg-container" slot="prefix">
                 <svg-icon icon-class="grade" />
@@ -170,7 +170,7 @@ export default {
           { required: true, message: '请输入登录密码', trigger: 'blur' },
           { validator: createValidateFn(isPassword, '密码由6-10个字符的字母和汉字组成'), trigger: 'blur' }
         ],
-        grade: [
+        gradeName: [
           { required: true, message: '请输入班级', trigger: 'blur' },
           { validator: createValidateFn(isGrade, '班级代号由2-15个字符组成'), trigger: 'blur' }
         ],

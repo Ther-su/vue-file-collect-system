@@ -8,6 +8,9 @@ import './icons'
 import 'normalize.css/normalize.css'
 import './permission/permission'
 import '@/styles/index.scss'
+import clipboard from 'clipboard'
+
+Vue.prototype.clipboard = clipboard
 
 Vue.use(ElementUI)
 Vue.config.productionTip = false
