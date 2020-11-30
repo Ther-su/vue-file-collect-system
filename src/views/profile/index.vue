@@ -194,9 +194,14 @@ export default {
                 message: '修改密码成功',
                 type: 'success'
               })
+              this.dialogVisible = false
+              this.passwordForm.oldPassword = ''
+              this.passwordForm.newPassword = ''
             })
             .catch((e) => {
-
+              this.dialogVisible = false
+              this.passwordForm.oldPassword = ''
+              this.passwordForm.newPassword = ''
             })
         } else {
           return false

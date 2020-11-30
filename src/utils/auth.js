@@ -1,6 +1,7 @@
 import Cookies from 'js-cookie'
 
 const TokenKey = 'koa.sid'
+const TokenKey2 = 'koa.sid'
 
 export function getToken () {
   return Cookies.get(TokenKey)
@@ -11,5 +12,6 @@ export function setToken (token) {
 }
 
 export function removeToken () {
-  return Cookies.remove(TokenKey)
+  Cookies.remove(TokenKey)
+  Cookies.remove(TokenKey2)
 }

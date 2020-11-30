@@ -32,6 +32,11 @@
             </el-input>
           </el-form-item>
 
+          <el-form-item prop="studentNumber" label="学号">
+            <el-input v-model="studentRegisterForm.studentNumber" prefix-icon="el-icon-info">
+            </el-input>
+          </el-form-item>
+
           <el-form-item prop="password" label="密码">
             <el-input prefix-icon="el-icon-lock" v-model="studentRegisterForm.password" type="password"></el-input>
           </el-form-item>
@@ -88,6 +93,11 @@
             </el-input>
           </el-form-item>
 
+          <el-form-item prop="studentNumber" label="学号">
+            <el-input v-model="adminRegisterForm.studentNumber" prefix-icon="el-icon-info">
+            </el-input>
+          </el-form-item>
+
           <el-form-item prop="password" label="密码">
             <el-input prefix-icon="el-icon-goods" v-model="adminRegisterForm.password" type="password"></el-input>
           </el-form-item>
@@ -108,6 +118,7 @@ import {
   isGradeId,
   isMajor,
   isGrade,
+  isStudentNumber,
   createValidateFn
 } from '../../utils/validate'
 export default {
@@ -121,9 +132,11 @@ export default {
         fullName: '苏明炯',
         gender: '1',
         role: 'student',
+        studentNumber: '201930142352',
         gradeId: 'f88cb0a8182934774f73eb9778eeb305'
       },
       adminRegisterForm: {
+        studentNumber: '201930167321',
         userName: '伊藤美来',
         password: 'SU20000922',
         fullName: '伊藤美来',
@@ -152,6 +165,10 @@ export default {
         gradeId: [
           { required: true, message: '请输入班级代号', trigger: 'blur' },
           { validator: createValidateFn(isGradeId, '班级代号由32位字符组成'), trigger: 'blur' }
+        ],
+        studentNumber: [
+          { required: true, message: '请输入学号', trigger: 'blur' },
+          { validator: createValidateFn(isStudentNumber, '学号为2-32位数字'), trigger: 'blur' }
         ]
       },
       adminRegisterFormRules: {
@@ -181,6 +198,10 @@ export default {
         major: [
           { required: true, message: '请输入专业', trigger: 'blur' },
           { validator: createValidateFn(isMajor, '专业由2-15个字符组成'), trigger: 'blur' }
+        ],
+        studentNumber: [
+          { required: true, message: '请输入学号', trigger: 'blur' },
+          { validator: createValidateFn(isStudentNumber, '学号为2-32位数字'), trigger: 'blur' }
         ]
       }
     }
@@ -229,6 +250,7 @@ $bg: #283443;
     padding: 20px 20px;
     background-color: #fff;
     position: absolute;
+    overflow-y: scroll;
     max-height: 95%;
     top: 50%;
     left:50%;

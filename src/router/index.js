@@ -4,7 +4,8 @@ const Layout = () => import(/* webpackChunkName: "layout" */ '@/layout')
 const Login = () => import(/* webpackChunkName: "login" */ '@/views/login')
 const Register = () => import(/* webpackChunkName: "register" */ '@/views/register')
 const Profile = () => import(/* webpackChunkName: "profile" */ '@/views/profile')
-const Task = () => import(/* webpackChunkName: "task" */ '@/views/task')
+const MyTask = () => import(/* webpackChunkName: "myTask" */ '@/views/myTask')
+const PublishTask = () => import(/* webpackChunkName: "publishTask" */ '@/views/publishTask')
 
 Vue.use(VueRouter)
 
@@ -48,17 +49,33 @@ export const constantRoutes = [
 
 export const asyncRoutes = [
   {
-    path: '/task',
+    path: '/myTask',
     component: Layout,
     children: [
       {
         path: 'index',
-        component: Task,
-        name: 'task',
+        component: MyTask,
+        name: 'myTask',
         meta: {
           title: '我的作业',
           icon: 'el-icon-notebook-1',
           roles: ['admin', 'student']
+        }
+      }
+    ]
+  },
+  {
+    path: '/publishTask',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: PublishTask,
+        name: 'publishTask',
+        meta: {
+          title: '发布作业',
+          icon: 'el-icon-s-opportunity',
+          roles: ['admin']
         }
       }
     ]

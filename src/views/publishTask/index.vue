@@ -1,0 +1,252 @@
+<template>
+  <div class="publish-task-container">
+    <el-card>
+      <el-form :model="taskInfo" status-icon ref="taskFormRef" :rules="taskFormRules" size="medium ">
+        <el-form-item prop="taskName" label="作业名称">
+          <el-input v-model="taskInfo.taskName" >
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="taskContent" label="作业内容">
+          <el-input v-model="taskInfo.taskContent" type="textarea" placeholder="字数应在50以内" :rows="7">
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="checkedStudents" label="需提交作业的同学">
+          <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
+          <div style="margin: 15px 0;"></div>
+          <el-checkbox-group v-model="taskInfo.checkedStudents" @change="handleCheckedStudentsChange">
+            <el-checkbox v-for="student in studentList" :label="student.id" :key="student.id">{{student.fullName}}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+
+        <el-form-item prop="deadline" label="截止时间">
+          <el-date-picker
+            v-model="taskInfo.deadline"
+            type="datetime"
+            placeholder="选择日期时间"
+            align="center"
+            :picker-options="pickerOptions">
+          </el-date-picker>
+        </el-form-item>
+
+        <el-form-item label="到期后是否允许提交">
+          <el-switch
+            v-model="taskInfo.canSubmitWhenOverdue"
+            active-value="1"
+            inactive-value="2"
+            active-text="允许"
+            inactive-text="禁止">
+          </el-switch>
+        </el-form-item>
+
+        <el-form-item label="是否上传图片">
+          <el-switch
+            v-model="isSubmitPic"
+            active-text="上传图片"
+            inactive-text="不上传图片">
+          </el-switch>
+        </el-form-item>
+
+        <el-collapse-transition>
+          <el-form-item v-if="isSubmitPic" label="上传图片">
+            <el-upload
+              ref="upload"
+              :auto-upload="false"
+              :http-request="upLoadImage"
+              list-type="picture-card"
+              :on-preview="handlePictureCardPreview"
+              :on-remove="handleRemove">
+              <i class="el-icon-plus"></i>
+            </el-upload>
+          </el-form-item>
+        </el-collapse-transition>
+
+        <el-form-item>
+          <el-button type="info" @click="resetForm">重置</el-button>
+          <el-button type="warning" @click="save">暂存</el-button>
+          <el-button type="primary" @click="handleSubmit">提交</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+    <el-dialog :visible.sync="dialogVisible">
+      <img width="100%" :src="dialogImageUrl" alt="">
+    </el-dialog>
+  </div>
+</template>
+<script>
+import {
+  createValidateFn,
+  isTaskName,
+  isTaskContent,
+  isCheckedStudents
+} from '../../utils/validate'
+import { upLoadImage } from '../../api/task'
+import { getGradePeople } from '../../api/grade'
+import { mapState } from 'vuex'
+export default {
+  name: 'publishTask',
+  computed: {
+    ...mapState({
+      newTask: state => state.task.newTask
+    })
+  },
+  data () {
+    return {
+      picUrl: process.env.VUE_APP_BASE_API + '/task/pic',
+      dialogImageUrl: '',
+      dialogVisible: false,
+      isSubmitPic: false,
+      canSubmit: false,
+      checkAll: false,
+      isIndeterminate: false,
+      studentList: [],
+      taskInfo: {
+        taskName: '',
+        taskContent: '',
+        deadline: '',
+        checkedStudents: [],
+        canSubmitWhenOverdue: '2'
+      },
+      taskFormRules: {
+        taskName: [
+          { required: true, message: '请输入作业名称', trigger: 'blur' },
+          { validator: createValidateFn(isTaskName, '作业名称为2-20个字符的数字、字母、汉字'), trigger: 'blur' }
+        ],
+        taskContent: [
+          { required: true, message: '请输入作业内容', trigger: 'blur' },
+          { validator: createValidateFn(isTaskContent, '作业内容为2-50个字符的数字、字母、汉字'), trigger: 'blur' }
+        ],
+        checkedStudents: [
+          { required: true, message: '请选择需要提交作业的同学', trigger: 'blur' },
+          { validator: createValidateFn(isCheckedStudents, '请选择需要提交作业的同学'), trigger: 'blur' }
+        ],
+        deadline: [
+          { required: true, message: '请输入截止日期', trigger: 'blur' }
+        ]
+      },
+      pickerOptions: {
+        shortcuts: [{
+          text: '今天',
+          onClick (picker) {
+            picker.$emit('pick', new Date())
+          }
+        }, {
+          text: '明天',
+          onClick (picker) {
+            const date = new Date()
+            date.setTime(date.getTime() + 3600 * 1000 * 24)
+            picker.$emit('pick', date)
+          }
+        }, {
+          text: '一周后',
+          onClick (picker) {
+            const date = new Date()
+            date.setTime(date.getTime() + 3600 * 1000 * 24 * 7)
+            picker.$emit('pick', date)
+          }
+        }]
+      }
+    }
+  },
+  created () {
+    const task = localStorage.getItem('task')
+    if (task) {
+      this.taskInfo = JSON.parse()
+    }
+    this.getStudentsByGrade()
+  },
+  methods: {
+    save () {
+      localStorage.setItem('task', JSON.stringify(this.taskInfo))
+    },
+    resetForm () {
+      localStorage.removeItem('task')
+      this.checkAll = false
+      this.taskInfo = {
+        taskName: '',
+        taskContent: '',
+        deadline: '',
+        checkedStudents: [],
+        canSubmitWhenOverdue: '2'
+      }
+    },
+    handleRemove (file, fileList) {
+      console.log(file, fileList)
+    },
+    handlePictureCardPreview (file) {
+      this.dialogImageUrl = file.url
+      this.dialogVisible = true
+    },
+    async getStudentsByGrade () {
+      const { data } = await getGradePeople()
+      this.studentList = data
+    },
+    handleCheckAllChange (val) {
+      const studentIdList = this.studentList.map(item => item.id)
+      this.taskInfo.checkedStudents = val ? studentIdList : []
+      this.isIndeterminate = false
+    },
+    handleCheckedStudentsChange (value) {
+      const checkedCount = value.length
+      this.checkAll = checkedCount === this.studentList.length
+      this.isIndeterminate = checkedCount > 0 && checkedCount < this.studentList.length
+    },
+    upLoadImage (param) {
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', param.file)
+      uploadFormData.append('taskId', this.newTask.id)
+      upLoadImage(uploadFormData)
+        .then(res => {
+          param.onSuccess()
+        })
+        .catch(() => {
+          param.onError()
+        })
+    },
+    handleSubmit () {
+      const that = this
+      this.$refs.taskFormRef.validate(valid => {
+        if (valid) {
+          const loading = this.$loading({
+            lock: true,
+            text: '提交中',
+            spinner: 'el-icon-loading',
+            background: 'rgba(0, 0, 0, 0.7)'
+          })
+          this.taskInfo.publishTime = new Date()
+          this.$store.dispatch('task/addTask', this.taskInfo)
+            .then(() => {
+              loading.close()
+              that.$refs.upload.submit()
+              this.$message({
+                message: '提交成功',
+                type: 'success'
+              })
+            })
+            .catch(() => {
+              loading.close()
+            })
+        } else {
+          return false
+        }
+      })
+    }
+  }
+}
+</script>
+<style lang="scss" scoped>
+.publish-task-container {
+  background-color: #eaedf1;
+  max-width:95%;
+  width: 900px;
+  margin: 10px auto;
+}
+.el-card {
+  padding: 20px 20px;
+}
+.el-switch {
+  display: block;
+  margin-top: 8px;
+}
+</style>

@@ -15,8 +15,11 @@ const state = {
 }
 
 const mutations = {
+  SET_USERINFO: (state, userInfo) => {
+    state.userInfo = userInfo
+  },
   SET_TOKEN: (state, token) => {
-    state.token = getToken()
+    state.token = token
   },
   SET_USERNAME: (state, userName) => {
     state.userName = userName
@@ -110,9 +113,7 @@ const actions = {
     return new Promise((resolve, reject) => {
       modifyInfo(userInfo).then(response => {
         const { data } = response
-        commit('SET_USERNAME', data.userName)
-        commit('SET_FULLNAME', data.fullName)
-        commit('SET_GENDER', data.gender)
+        commit('SET_USERINFO', userInfo)
         resolve(data)
       }).catch(error => {
         reject(error)
@@ -136,8 +137,6 @@ const actions = {
         commit('SET_ROLE', null)
         removeToken()
         resetRouter()
-        dispatch('tagsView/delAllViews', null, { root: true })
-
         resolve()
       }).catch(error => {
         reject(error)
