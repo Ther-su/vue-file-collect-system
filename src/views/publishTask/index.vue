@@ -51,6 +51,7 @@
         <el-collapse-transition>
           <el-form-item v-if="isSubmitPic" label="上传图片">
             <el-upload
+              action="http://localhost:3000/api/task/pic"
               ref="upload"
               :auto-upload="false"
               :http-request="upLoadImage"
@@ -79,7 +80,8 @@ import {
   createValidateFn,
   isTaskName,
   isTaskContent,
-  isCheckedStudents
+  isCheckedStudents,
+  isDeadline
 } from '../../utils/validate'
 import { upLoadImage } from '../../api/task'
 import { getGradePeople } from '../../api/grade'
@@ -93,6 +95,8 @@ export default {
   },
   data () {
     return {
+      formDataList: [],
+      isUploading: false,
       picUrl: process.env.VUE_APP_BASE_API + '/task/pic',
       dialogImageUrl: '',
       dialogVisible: false,
@@ -122,7 +126,8 @@ export default {
           { validator: createValidateFn(isCheckedStudents, '请选择需要提交作业的同学'), trigger: 'blur' }
         ],
         deadline: [
-          { required: true, message: '请输入截止日期', trigger: 'blur' }
+          { required: true, message: '请输入截止日期', trigger: 'blur' },
+          { validator: createValidateFn(isDeadline, '选择的时间应晚于现在哦'), trigger: 'blur' }
         ]
       },
       pickerOptions: {
@@ -192,11 +197,32 @@ export default {
       this.checkAll = checkedCount === this.studentList.length
       this.isIndeterminate = checkedCount > 0 && checkedCount < this.studentList.length
     },
+    handleUploadQueue () {
+      if (this.formDataList.length === 0) return null
+      const curFormData = this.formDataList.shift()
+      return new Promise((resolve, reject) => {
+        upLoadImage(curFormData)
+          .then(() => {
+            if (this.formDataList.length > 0) {
+              this.handleUploadQueue()
+            } else {
+              this.isUploading = false
+            }
+            resolve()
+          })
+          .catch(err => {
+            reject(err)
+          })
+      })
+    },
     upLoadImage (param) {
       const uploadFormData = new FormData()
       uploadFormData.append('file', param.file)
       uploadFormData.append('taskId', this.newTask.id)
-      upLoadImage(uploadFormData)
+      this.formDataList.push(uploadFormData)
+      if (this.isUploading) return null
+      else this.isUploading = true
+      this.handleUploadQueue()
         .then(res => {
           param.onSuccess()
         })
@@ -218,6 +244,7 @@ export default {
           this.$store.dispatch('task/addTask', this.taskInfo)
             .then(() => {
               loading.close()
+              console.log('upload', that.$refs.upload)
               that.$refs.upload.submit()
               this.$message({
                 message: '提交成功',

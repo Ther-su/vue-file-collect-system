@@ -22,3 +22,21 @@ export function upLoadImage (data) {
     data
   })
 }
+
+export function upLoadFileChunk (data, args) {
+  return request({
+    url: '/task/fileChunk',
+    method: 'post',
+    data,
+    ...args
+  })
+}
+
+export function mergeFileChunk (data, args) {
+  return request({
+    url: '/task/fileMerge',
+    method: 'post',
+    data,
+    ...args
+  })
+}

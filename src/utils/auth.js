@@ -1,7 +1,7 @@
 import Cookies from 'js-cookie'
 
 const TokenKey = 'koa.sid'
-const TokenKey2 = 'koa.sid'
+const TokenKey2 = 'koa.sid.sig'
 
 export function getToken () {
   return Cookies.get(TokenKey)

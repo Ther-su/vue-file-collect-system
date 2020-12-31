@@ -1,21 +1,9 @@
 import axios from 'axios'
 import { MessageBox, Message } from 'element-ui'
 import store from '@/store'
-import { getToken } from '@/utils/auth'
 
 axios.defaults.withCredentials = true
 axios.defaults.baseURL = process.env.VUE_APP_BASE_API
-axios.interceptors.request.use(
-  config => {
-    if (store.getters.token) {
-      config.headers.Authorization = getToken()
-    }
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
-)
 
 axios.interceptors.response.use(
   response => {
@@ -43,6 +31,7 @@ axios.interceptors.response.use(
   },
   error => {
     console.log('err' + error) // for debug
+    console.log(error.message)
     Message({
       message: error.message,
       type: 'error',

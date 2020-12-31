@@ -62,7 +62,7 @@ const actions = {
         commit('SET_SCHOOL', data.school)
         commit('SET_GRADENAME', data.gradeName)
         commit('SET_GRADEID', data.gradeId)
-        commit('SET_ROLE', data.role)
+        // commit('SET_ROLE', data.role)
         resolve(data)
       }).catch(error => {
         reject(error)

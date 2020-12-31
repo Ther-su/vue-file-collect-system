@@ -95,8 +95,19 @@ import {
 } from '../../utils/validate'
 export default {
   name: 'Profile',
+  watch: {
+    'state.testArr': (newVal, oldVal) => {
+      console.log('更新', newVal)
+    }
+  },
+  mounted () {
+    this.state.testArr.push(2)
+  },
   data () {
     return {
+      state: {
+        testArr: []
+      },
       dialogVisible: false,
       loading: false,
       isModifyStudentInfo: false,

@@ -1,3 +1,4 @@
+
 export function isExternal (path) {
   return /^(https?:|mailto:|tel:)/.test(path)
 }
@@ -47,7 +48,8 @@ export function isCheckedStudents (checkedStudents) {
 }
 
 export function isDeadline (deadline) {
-  return Object.prototype.toString.call(deadline).slice(7, 12) === 'date'
+  console.log(Date.now(), new Date(deadline).getTime())
+  return Date.now() < new Date(deadline).getTime()
 }
 
 export function createValidateFn (testFn, err) {
