@@ -1,24 +1,28 @@
-import { addTask, getMyTask } from '@/api/task'
+import { addTask, getMyTasks, getPublishedTasks } from '@/api/task'
 import Vue from 'vue'
 const state = {
-  tasks: [],
-  count: 0,
-  newTask: null
+  myTasks: [],
+  publishedTasks: [],
+  myTasksCount: 0,
+  publishedTasksCount: 0
 }
 
 const mutations = {
-  SET_TASKS: (state, tasks) => {
-    state.tasks = tasks
+  SET_MY_TASKS: (state, myTasks) => {
+    state.myTasks = myTasks
   },
-  SET_NEW_TASK: (state, task) => {
-    state.newTask = task
+  SET_PUBLISHED_TASKS: (state, publishedTasks) => {
+    state.publishedTasks = publishedTasks
   },
-  SET_COUNT: (state, count) => {
-    state.count = count
+  SET_MY_TASKS_COUNT: (state, myTasksCount) => {
+    state.myTasksCount = myTasksCount
+  },
+  SET_PUBLISH_TASKS_COUNT: (state, publishedTasksCount) => {
+    state.publishedTasksCount = publishedTasksCount
   },
   SET_UPLOADFILE: (state, { rawFile, taskId }) => {
     let taskIndex = -1
-    const targetTask = (state.tasks.filter((item, index) => {
+    const targetTask = (state.myTasks.filter((item, index) => {
       if (item.id === taskId) {
         taskIndex = index
         return true
@@ -27,7 +31,7 @@ const mutations = {
       }
     }))[0]
     targetTask.uploadFile = rawFile
-    Vue.set(state.tasks, taskIndex, targetTask)
+    Vue.set(state.myTasks, taskIndex, targetTask)
   }
 }
 
@@ -36,22 +40,37 @@ const actions = {
     return new Promise((resolve, reject) => {
       addTask(task).then(response => {
         const { data } = response
-        const tasks = state.tasks
-        tasks.unshift(data)
-        commit('SET_TASKS', tasks)
-        commit('SET_NEW_TASK', data)
+        const myTasks = state.myTasks
+        myTasks.unshift(data)
+        commit('SET_MY_TASKS', myTasks)
         resolve()
       }).catch(error => {
         reject(error)
       })
     })
   },
-  getMyTask ({ commit }) {
+  getMyTask ({ commit }, queryInfo) {
     return new Promise((resolve, reject) => {
-      getMyTask().then(response => {
+      getMyTasks({
+        params: queryInfo
+      }).then(response => {
         const { data } = response
-        commit('SET_TASKS', data.taskList)
-        commit('SET_COUNT', data.count)
+        commit('SET_MY_TASKS', data.taskList)
+        commit('SET_MY_TASKS_COUNT', data.count)
+        resolve()
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+  getPublishedTasks ({ commit }, queryInfo) {
+    return new Promise((resolve, reject) => {
+      getPublishedTasks({
+        params: queryInfo
+      }).then(response => {
+        const { data } = response
+        commit('SET_PUBLISHED_TASKS', data.taskList)
+        commit('SET_PUBLISH_TASKS_COUNT', data.count)
         resolve()
       }).catch(error => {
         reject(error)

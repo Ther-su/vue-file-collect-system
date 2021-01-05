@@ -1,7 +1,7 @@
 <template>
   <div class="my-task-container">
     <el-timeline>
-      <el-timeline-item :timestamp="item.publishTime | dateFormat" placement="top" v-for="item in tasks" :key="item.id">
+      <el-timeline-item :timestamp="item.publishTime | dateFormat" placement="top" v-for="item in myTasks" :key="item.id">
         <el-card>
           <el-collapse accordion>
             <el-collapse-item>
@@ -18,42 +18,42 @@
                   </div>
                 </div>
               </template>
-              <div class="content-box">{{item.taskContent}}</div>
-              <div class="image-box">
-                <template v-if="item.picList.length > 0">
-                  <el-image
-                  v-for="pic in item.picList" :key="pic" fit="contain"
-                  :src="pic" :preview-src-list="item.picList"
-                  >
-                  </el-image>
-                </template>
-              </div>
+              <div class="content-box" v-html="item.taskContent"></div>
               <el-button-group>
-                <el-button size="small" type="primary" class="submit-btn">
+                <el-button size="small" type="primary" class="submit-btn" :disabled="item.uploadFile&&item.uploadFile.status!=='wait'">
                   <i class="el-icon-upload2 el-icon--left" size="mini"></i>选择文件
                   <input
                     type="file"
                     :multiple="false"
                     class="select-file-input"
                     ref="input"
+                    οnclick="f.outerHTML=f.outerHTML"
                     @change="handleFileChange($event, item.taskId)"
                   />
                 </el-button>
-                <el-button size="small" type="success" @click="handleUpload(item)">
+                <el-button size="small" type="success" @click="handleUpload(item)"
+                  :disabled="!item.uploadFile||item.uploadFile.status!=='wait'"
+                >
                   <i class="el-icon-upload el-icon--left" size="mini"></i>
                   上传文件
                 </el-button>
-                <el-button type="danger" size="small" @click="handlePause(item)">
+                <el-button type="danger" size="small" @click="handlePause(item)"
+                  :disabled="!item.uploadFile||item.uploadFile.status!=='uploading'">
                   <i class="el-icon-video-pause el-icon--left" size="mini"></i>暂停
                 </el-button>
-                <el-button type="warning" size="small" @click="handleResume(item)">
+                <el-button type="warning" size="small" @click="handleResume(item)"
+                  :disabled="!item.uploadFile||item.uploadFile.status!=='pause'">
                   <i class="el-icon-video-play el-icon--left" size="mini"></i>恢复
+                </el-button>
+                <el-button type="info" size="small" @click="clearFiles(item)"
+                  :disabled="!item.uploadFile">
+                  <i class="el-icon-delete el-icon--left" size="mini"></i>清空
                 </el-button>
               </el-button-group>
               <div class="upload-info-box" v-if="item.uploadFile">
                 <div class="name-box">{{item.uploadFile.name}}</div>
                 <div class="size-box">{{item.uploadFile.size | transformByte}}</div>
-                <div class="progress-box" v-if="item.uploadFile.hashProgress !== 100">
+                <div class="progress-box" v-if="item.uploadFile.status === 'hashing' || item.uploadFile.status === 'wait'">
                   <span>{{item.uploadFile.status === 'wait' ? '准备读取文件' : '正在读取文件'}}</span>
                   <el-progress :percentage="item.uploadFile.hashProgress"></el-progress>
                 </div>
@@ -69,9 +69,16 @@
     </el-timeline>
 
     <el-pagination
+      small
       background
-      layout="prev, pager, next"
-      :total="1000">
+      layout="total, sizes, prev, pager, next"
+      :page-sizes="[3,5,8,10]"
+      :page-size="queryInfo.pageSize"
+      :current-page="queryInfo.pageNum"
+      :total="count"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+    >
     </el-pagination>
   </div>
 </template>
@@ -79,10 +86,11 @@
 // 单个文件的状态
 import { CancelToken } from 'axios'
 import { getStorage, setStorage, clearStorage } from '../../utils/localstorage'
-import { upLoadFileChunk, mergeFileChunk } from '../../api/task'
+import { upLoadFileChunk, mergeFileChunk, presenceFileChunk } from '../../api/task'
 import { mapState } from 'vuex'
 const fileStatus = {
   wait: 'wait',
+  hashing: 'hashing',
   uploading: 'uploading',
   success: 'success',
   error: 'error',
@@ -129,13 +137,26 @@ export default {
     return {
       tempThreads: 3,
       worker: null,
-      cancels: []
+      cancels: [],
+      queryInfo: {
+        pageSize: 3,
+        pageNum: 1
+      }
     }
   },
   methods: {
+    handleSizeChange (newSize) {
+      this.queryInfo.pageSize = newSize
+      this.getMyTask()
+    },
+    handleCurrentChange (newPage) {
+      this.queryInfo.pageNum = newPage
+      this.getMyTask()
+    },
     handleFileChange (e, taskId) {
       const files = e.target.files
-      if (!files) return null
+      console.log(files)
+      if (!files.length) return null
       const postFiles = Array.prototype.slice.call(files)
       const rawFile = postFiles[0]
       rawFile.status = fileStatus.wait
@@ -145,6 +166,23 @@ export default {
       rawFile.hashProgress = 0
       rawFile.taskId = taskId
       this.$store.commit('task/SET_UPLOADFILE', { rawFile, taskId })
+    },
+    verifyUpload (fileName, fileHash) {
+      return new Promise((resolve) => {
+        const obj = {
+          hash: fileHash,
+          fileName
+        }
+        presenceFileChunk({
+          data: obj
+        })
+          .then((res) => {
+            resolve(res.data)
+          })
+          .catch((err) => {
+            console.log('verifyUpload -> err', err)
+          })
+      })
     },
     // 创建文件切片
     createFileChunk (file, size = chunkSize) {
@@ -159,35 +197,58 @@ export default {
       return fileChunkList
     },
     async handleUpload ({ uploadFile }) {
-      const { taskId } = uploadFile
-      const fileChunkList = this.createFileChunk(uploadFile)
-      // 若不是恢复，再进行hash计算
-      if (uploadFile.status !== 'resume') {
-        uploadFile.hash = await this.calculateHash({ fileChunkList, uploadFile, taskId })
+      try {
+        const { taskId } = uploadFile
+        const fileChunkList = this.createFileChunk(uploadFile)
+        // 若不是恢复，再进行hash计算
+        if (uploadFile.status !== 'resume') {
+          uploadFile.status = fileStatus.hashing
+          uploadFile.hash = await this.calculateHash({ uploadFile, taskId })
+        }
+        const { presence } = await this.verifyUpload(uploadFile.name, uploadFile.hash)
+        if (presence) {
+          uploadFile.status = fileStatus.secondPass
+          uploadFile.uploadProgress = 100
+        } else {
+          uploadFile.status = fileStatus.uploading
+          const getChunkStorage = this.getChunkStorage(uploadFile.hash)
+          uploadFile.fileHash = uploadFile.hash // 文件的hash，合并时使用
+          uploadFile.chunkList = fileChunkList.map(({ file }, index) => ({
+            fileHash: uploadFile.hash,
+            fileName: uploadFile.name,
+            index,
+            hash: uploadFile.hash + '-' + index,
+            chunk: file,
+            taskId,
+            size: file.size,
+            uploaded: getChunkStorage && getChunkStorage.includes(index), // 标识：是否已完成上传
+            progress: getChunkStorage && getChunkStorage.includes(index) ? 100 : 0,
+            status: getChunkStorage && getChunkStorage.includes(index) ? 'success' : 'wait' // 上传状态，用作进度状态显示
+          }))
+          this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+          await this.uploadChunks(uploadFile)
+        }
+      } catch (err) {
+        console.log(err)
       }
-      uploadFile.status = fileStatus.uploading
-      const getChunkStorage = this.getChunkStorage(uploadFile.hash)
-      uploadFile.fileHash = uploadFile.hash // 文件的hash，合并时使用
-      uploadFile.chunkList = fileChunkList.map(({ file }, index) => ({
-        fileHash: uploadFile.hash,
-        fileName: uploadFile.name,
-        index,
-        hash: uploadFile.hash + '-' + index,
-        chunk: file,
-        taskId,
-        size: file.size,
-        uploaded: getChunkStorage && getChunkStorage.includes(index), // 标识：是否已完成上传
-        progress: getChunkStorage && getChunkStorage.includes(index) ? 100 : 0,
-        status: getChunkStorage && getChunkStorage.includes(index) ? 'success' : 'wait' // 上传状态，用作进度状态显示
-      }))
-      this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
-      await this.uploadChunks(uploadFile)
     },
     // 生成文件 hash（web-worker）
-    calculateHash ({ fileChunkList, uploadFile, taskId }) {
+    calculateHash ({ uploadFile, taskId }) {
       return new Promise((resolve) => {
+        // this.worker = new Worker('./hash.js')
+        // this.worker.postMessage({ fileChunkList })
+        // this.worker.onmessage = (e) => {
+        //   const { percentage, hash } = e.data
+        //   uploadFile.hashProgress = Number(percentage.toFixed(0))
+        //   console.log(uploadFile.hashProgress)
+        //   this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+        //   if (hash) {
+        //     resolve(hash)
+        //   }
+        // }
+
         this.worker = new Worker('./hash.js')
-        this.worker.postMessage({ fileChunkList })
+        this.worker.postMessage({ uploadFile })
         this.worker.onmessage = (e) => {
           const { percentage, hash } = e.data
           uploadFile.hashProgress = Number(percentage.toFixed(0))
@@ -237,17 +298,28 @@ export default {
         }
       })
     },
+    // 处理清空
+    clearFiles ({ uploadFile }) {
+      const { taskId } = uploadFile
+      this.$store.commit('task/SET_UPLOADFILE', { rawFile: null, taskId })
+      this.worker && this.worker.terminate()
+    },
     // 暂停上传
     handlePause ({ uploadFile }) {
+      debugger
+      const { taskId } = uploadFile
       uploadFile.status = fileStatus.pause
       uploadFile.fakeUploadProgress = uploadFile.uploadProgress
       while (this.cancels.length > 0) {
         this.cancels.pop()('暂停上传')
       }
+      this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
     },
     // 恢复上传
     handleResume ({ uploadFile }) {
       uploadFile.status = fileStatus.resume
+      const { taskId } = uploadFile
+      this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
       this.handleUpload({ uploadFile })
     },
     // 通知服务端合并切片
@@ -367,6 +439,9 @@ export default {
           }
 
           if (finished >= total) {
+            uploadFile.status = fileStatus.success
+            const { taskId } = uploadFile
+            that.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
             resolve()
           }
         }
@@ -391,10 +466,11 @@ export default {
       return getStorage(name)
     },
     getMyTask () {
-      this.$store.dispatch('task/getMyTask')
+      this.$store.dispatch('task/getMyTask', this.queryInfo)
         .then(() => {
         })
         .catch((e) => {
+          console.log(e)
         })
     }
   },
@@ -403,14 +479,9 @@ export default {
   },
   computed: {
     ...mapState({
-      tasks: state => state.task.tasks,
+      myTasks: state => state.task.myTasks,
       count: state => state.task.count
-    }),
-    filterUploadFiles () {
-      return function (taskId) {
-        return this.uploadFiles.filter((item) => item.taskId === taskId)
-      }
-    }
+    })
   }
 }
 </script>
@@ -433,18 +504,13 @@ export default {
 .my-task-container {
   max-width:97%;
   width: 1000px;
-  margin: 10px auto;
+  margin: 5px auto;
 }
 .el-timeline {
   padding: 0;
 }
-.el-image {
-  width: 100px;
-  height: 100px;
-  margin: 0 10px;
-}
 .title-box {
-  width: 700px;
+  width: 800px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -452,11 +518,8 @@ export default {
 .content-box {
   padding: 10px 0;
 }
-.image-box {
-  padding: 10px 0;
-}
 .tip-box {
-  width: 200px;
+  width: 180px;
   display: flex;
   align-items: center;
   justify-content: space-between;

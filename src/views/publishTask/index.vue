@@ -8,8 +8,12 @@
         </el-form-item>
 
         <el-form-item prop="taskContent" label="作业内容">
-          <el-input v-model="taskInfo.taskContent" type="textarea" placeholder="字数应在50以内" :rows="7">
-          </el-input>
+          <!-- <el-input v-model="taskInfo.taskContent" type="textarea" placeholder="字数应在50以内" :rows="7">
+          </el-input> -->
+          <tinymce
+            ref="editor"
+            v-model="taskInfo.taskContent"
+            />
         </el-form-item>
 
         <el-form-item prop="checkedStudents" label="需提交作业的同学">
@@ -30,39 +34,6 @@
           </el-date-picker>
         </el-form-item>
 
-        <el-form-item label="到期后是否允许提交">
-          <el-switch
-            v-model="taskInfo.canSubmitWhenOverdue"
-            active-value="1"
-            inactive-value="2"
-            active-text="允许"
-            inactive-text="禁止">
-          </el-switch>
-        </el-form-item>
-
-        <el-form-item label="是否上传图片">
-          <el-switch
-            v-model="isSubmitPic"
-            active-text="上传图片"
-            inactive-text="不上传图片">
-          </el-switch>
-        </el-form-item>
-
-        <el-collapse-transition>
-          <el-form-item v-if="isSubmitPic" label="上传图片">
-            <el-upload
-              action="http://localhost:3000/api/task/pic"
-              ref="upload"
-              :auto-upload="false"
-              :http-request="upLoadImage"
-              list-type="picture-card"
-              :on-preview="handlePictureCardPreview"
-              :on-remove="handleRemove">
-              <i class="el-icon-plus"></i>
-            </el-upload>
-          </el-form-item>
-        </el-collapse-transition>
-
         <el-form-item>
           <el-button type="info" @click="resetForm">重置</el-button>
           <el-button type="warning" @click="save">暂存</el-button>
@@ -70,37 +41,28 @@
         </el-form-item>
       </el-form>
     </el-card>
-    <el-dialog :visible.sync="dialogVisible">
-      <img width="100%" :src="dialogImageUrl" alt="">
-    </el-dialog>
   </div>
 </template>
 <script>
 import {
   createValidateFn,
   isTaskName,
-  isTaskContent,
   isCheckedStudents,
   isDeadline
 } from '../../utils/validate'
-import { upLoadImage } from '../../api/task'
 import { getGradePeople } from '../../api/grade'
-import { mapState } from 'vuex'
+import tinymce from '../../components/Tinymce'
 export default {
   name: 'publishTask',
-  computed: {
-    ...mapState({
-      newTask: state => state.task.newTask
-    })
+  components: {
+    tinymce
   },
   data () {
     return {
+      disabled: false,
       formDataList: [],
       isUploading: false,
       picUrl: process.env.VUE_APP_BASE_API + '/task/pic',
-      dialogImageUrl: '',
-      dialogVisible: false,
-      isSubmitPic: false,
       canSubmit: false,
       checkAll: false,
       isIndeterminate: false,
@@ -109,8 +71,7 @@ export default {
         taskName: '',
         taskContent: '',
         deadline: '',
-        checkedStudents: [],
-        canSubmitWhenOverdue: '2'
+        checkedStudents: []
       },
       taskFormRules: {
         taskName: [
@@ -118,8 +79,7 @@ export default {
           { validator: createValidateFn(isTaskName, '作业名称为2-20个字符的数字、字母、汉字'), trigger: 'blur' }
         ],
         taskContent: [
-          { required: true, message: '请输入作业内容', trigger: 'blur' },
-          { validator: createValidateFn(isTaskContent, '作业内容为2-50个字符的数字、字母、汉字'), trigger: 'blur' }
+          { required: true, message: '请输入作业内容', trigger: 'blur' }
         ],
         checkedStudents: [
           { required: true, message: '请选择需要提交作业的同学', trigger: 'blur' },
@@ -172,16 +132,8 @@ export default {
         taskName: '',
         taskContent: '',
         deadline: '',
-        checkedStudents: [],
-        canSubmitWhenOverdue: '2'
+        checkedStudents: []
       }
-    },
-    handleRemove (file, fileList) {
-      console.log(file, fileList)
-    },
-    handlePictureCardPreview (file) {
-      this.dialogImageUrl = file.url
-      this.dialogVisible = true
     },
     async getStudentsByGrade () {
       const { data } = await getGradePeople()
@@ -197,39 +149,39 @@ export default {
       this.checkAll = checkedCount === this.studentList.length
       this.isIndeterminate = checkedCount > 0 && checkedCount < this.studentList.length
     },
-    handleUploadQueue () {
-      if (this.formDataList.length === 0) return null
-      const curFormData = this.formDataList.shift()
-      return new Promise((resolve, reject) => {
-        upLoadImage(curFormData)
-          .then(() => {
-            if (this.formDataList.length > 0) {
-              this.handleUploadQueue()
-            } else {
-              this.isUploading = false
-            }
-            resolve()
-          })
-          .catch(err => {
-            reject(err)
-          })
-      })
-    },
-    upLoadImage (param) {
-      const uploadFormData = new FormData()
-      uploadFormData.append('file', param.file)
-      uploadFormData.append('taskId', this.newTask.id)
-      this.formDataList.push(uploadFormData)
-      if (this.isUploading) return null
-      else this.isUploading = true
-      this.handleUploadQueue()
-        .then(res => {
-          param.onSuccess()
-        })
-        .catch(() => {
-          param.onError()
-        })
-    },
+    // handleUploadQueue () {
+    //   if (this.formDataList.length === 0) return null
+    //   const curFormData = this.formDataList.shift()
+    //   return new Promise((resolve, reject) => {
+    //     upLoadImage(curFormData)
+    //       .then(() => {
+    //         if (this.formDataList.length > 0) {
+    //           this.handleUploadQueue()
+    //         } else {
+    //           this.isUploading = false
+    //         }
+    //         resolve()
+    //       })
+    //       .catch(err => {
+    //         reject(err)
+    //       })
+    //   })
+    // },
+    // upLoadImage (param) {
+    //   const uploadFormData = new FormData()
+    //   uploadFormData.append('file', param.file)
+    //   uploadFormData.append('taskId', this.newTask.id)
+    //   this.formDataList.push(uploadFormData)
+    //   if (this.isUploading) return null
+    //   else this.isUploading = true
+    //   this.handleUploadQueue()
+    //     .then(res => {
+    //       param.onSuccess()
+    //     })
+    //     .catch(() => {
+    //       param.onError()
+    //     })
+    // },
     handleSubmit () {
       const that = this
       this.$refs.taskFormRef.validate(valid => {
@@ -244,9 +196,7 @@ export default {
           this.$store.dispatch('task/addTask', this.taskInfo)
             .then(() => {
               loading.close()
-              console.log('upload', that.$refs.upload)
-              that.$refs.upload.submit()
-              this.$message({
+              that.$message({
                 message: '提交成功',
                 type: 'success'
               })

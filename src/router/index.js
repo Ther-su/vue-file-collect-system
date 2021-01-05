@@ -6,6 +6,7 @@ const Register = () => import(/* webpackChunkName: "register" */ '@/views/regist
 const Profile = () => import(/* webpackChunkName: "profile" */ '@/views/profile')
 const MyTask = () => import(/* webpackChunkName: "myTask" */ '@/views/myTask')
 const PublishTask = () => import(/* webpackChunkName: "publishTask" */ '@/views/publishTask')
+const ManageTask = () => import(/* webpackChunkName: "manageTask" */ '@/views/manageTask')
 
 Vue.use(VueRouter)
 
@@ -75,6 +76,22 @@ export const asyncRoutes = [
         meta: {
           title: '发布作业',
           icon: 'el-icon-s-opportunity',
+          roles: ['admin']
+        }
+      }
+    ]
+  },
+  {
+    path: '/manageTask',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: ManageTask,
+        name: 'manageTask',
+        meta: {
+          title: '管理作业',
+          icon: 'el-icon-s-management',
           roles: ['admin']
         }
       }

@@ -8,10 +8,19 @@ export function addTask (data) {
   })
 }
 
-export function getMyTask () {
+export function getMyTasks (args) {
   return request({
     url: '/task/my',
-    method: 'get'
+    method: 'get',
+    ...args
+  })
+}
+
+export function getPublishedTasks (args) {
+  return request({
+    url: '/task/published',
+    method: 'get',
+    ...args
   })
 }
 
@@ -37,6 +46,21 @@ export function mergeFileChunk (data, args) {
     url: '/task/fileMerge',
     method: 'post',
     data,
+    ...args
+  })
+}
+export function presenceFileChunk (data) {
+  return request({
+    url: '/task/presence',
+    method: 'post',
+    data
+  })
+}
+
+export function getSubmitSituation (args) {
+  return request({
+    url: '/task/submitSituation',
+    method: 'get',
     ...args
   })
 }
