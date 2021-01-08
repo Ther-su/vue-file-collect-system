@@ -84,11 +84,21 @@
         <el-table-column label="学号" prop="studentNumber"></el-table-column>
         <el-table-column label="用户名称" prop="userName"></el-table-column>
         <el-table-column label="姓名" prop="fullName"></el-table-column>
-        <el-table-column label="性别" prop="gender"></el-table-column>
-        <el-table-column label="提交情况" prop="status"></el-table-column>
+        <el-table-column label="性别" prop="gender">
+          <template slot-scope="scope">
+            {{scope.row.gender | genderFormat}}
+          </template>
+        </el-table-column>
+        <el-table-column label="提交情况" prop="status">
+          <template v-slot="scope">
+            <el-tag :type="scope.row.status==='1'?'danger':'success'">
+              {{scope.row.status==='1'?'未提交':'已提交'}}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="300px">
           <template v-slot="scope">
-            <el-button size="mini" type="danger" icon="el-icon-delete" @click="downloadPersonalTask(scope)">下载作业</el-button>
+            <el-button size="mini" type="danger" icon="el-icon-upload" @click="downloadPersonalTask(scope)">下载作业</el-button>
           </template>
         </el-table-column>
       </el-table>

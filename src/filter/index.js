@@ -29,3 +29,11 @@ Vue.filter('statusTagFormat', function (val) {
     return 'danger'
   }
 })
+
+Vue.filter('genderFormat', function (val) {
+  if (val === '1') {
+    return '男'
+  } else {
+    return '女'
+  }
+})
