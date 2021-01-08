@@ -19,10 +19,11 @@
                 </div>
               </template>
               <div class="content-box" v-html="item.taskContent"></div>
-              <el-button-group>
+
                 <el-button size="small" type="primary" class="submit-btn" :disabled="item.uploadFile&&item.uploadFile.status!=='wait'">
                   <i class="el-icon-upload2 el-icon--left" size="mini"></i>选择文件
                   <input
+                    v-if="!(item.uploadFile&&item.uploadFile.status!=='wait')"
                     type="file"
                     :multiple="false"
                     class="select-file-input"
@@ -49,7 +50,6 @@
                   :disabled="!item.uploadFile">
                   <i class="el-icon-delete el-icon--left" size="mini"></i>清空
                 </el-button>
-              </el-button-group>
               <div class="upload-info-box" v-if="item.uploadFile">
                 <div class="name-box">{{item.uploadFile.name}}</div>
                 <div class="size-box">{{item.uploadFile.size | transformByte}}</div>
@@ -86,8 +86,7 @@
 // 单个文件的状态
 import { CancelToken } from 'axios'
 import { getStorage, setStorage, clearStorage } from '../../utils/localstorage'
-import { upLoadFileChunk, mergeFileChunk, presenceFileChunk } from '../../api/task'
-import { mapState } from 'vuex'
+import { upLoadFileChunk, mergeFileChunk, presenceFileChunk, getMyTasks } from '../../api/task'
 const fileStatus = {
   wait: 'wait',
   hashing: 'hashing',
@@ -138,6 +137,8 @@ export default {
       tempThreads: 3,
       worker: null,
       cancels: [],
+      myTasks: [],
+      count: 0,
       queryInfo: {
         pageSize: 3,
         pageNum: 1
@@ -155,7 +156,6 @@ export default {
     },
     handleFileChange (e, taskId) {
       const files = e.target.files
-      console.log(files)
       if (!files.length) return null
       const postFiles = Array.prototype.slice.call(files)
       const rawFile = postFiles[0]
@@ -165,7 +165,7 @@ export default {
       rawFile.fakeUploadProgress = 0 // 假进度条，处理恢复上传后，进度条后移的问题
       rawFile.hashProgress = 0
       rawFile.taskId = taskId
-      this.$store.commit('task/SET_UPLOADFILE', { rawFile, taskId })
+      this.setUploadFile(rawFile, taskId)
     },
     verifyUpload (fileName, fileHash) {
       return new Promise((resolve) => {
@@ -173,14 +173,12 @@ export default {
           hash: fileHash,
           fileName
         }
-        presenceFileChunk({
-          data: obj
-        })
+        presenceFileChunk(obj)
           .then((res) => {
             resolve(res.data)
           })
           .catch((err) => {
-            console.log('verifyUpload -> err', err)
+            console.log(err)
           })
       })
     },
@@ -209,6 +207,7 @@ export default {
         if (presence) {
           uploadFile.status = fileStatus.secondPass
           uploadFile.uploadProgress = 100
+          this.setUploadFile(uploadFile, taskId)
         } else {
           uploadFile.status = fileStatus.uploading
           const getChunkStorage = this.getChunkStorage(uploadFile.hash)
@@ -225,7 +224,7 @@ export default {
             progress: getChunkStorage && getChunkStorage.includes(index) ? 100 : 0,
             status: getChunkStorage && getChunkStorage.includes(index) ? 'success' : 'wait' // 上传状态，用作进度状态显示
           }))
-          this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+          this.setUploadFile(uploadFile, taskId)
           await this.uploadChunks(uploadFile)
         }
       } catch (err) {
@@ -252,7 +251,7 @@ export default {
         this.worker.onmessage = (e) => {
           const { percentage, hash } = e.data
           uploadFile.hashProgress = Number(percentage.toFixed(0))
-          this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+          this.setUploadFile(uploadFile, taskId)
           if (hash) {
             resolve(hash)
           }
@@ -281,10 +280,8 @@ export default {
           this.$message.error('亲 上传失败了,考虑重试下呦')
           return null
         }
-        console.log('即将合并')
         // 合并切片
         const isUpload = chunkData.some((item) => item.uploaded === false)
-        console.log(isUpload)
         if (isUpload) {
           alert('存在失败的切片')
         } else {
@@ -301,25 +298,24 @@ export default {
     // 处理清空
     clearFiles ({ uploadFile }) {
       const { taskId } = uploadFile
-      this.$store.commit('task/SET_UPLOADFILE', { rawFile: null, taskId })
+      this.setUploadFile(null, taskId)
       this.worker && this.worker.terminate()
     },
     // 暂停上传
     handlePause ({ uploadFile }) {
-      debugger
       const { taskId } = uploadFile
       uploadFile.status = fileStatus.pause
       uploadFile.fakeUploadProgress = uploadFile.uploadProgress
       while (this.cancels.length > 0) {
         this.cancels.pop()('暂停上传')
       }
-      this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+      this.setUploadFile(uploadFile, taskId)
     },
     // 恢复上传
     handleResume ({ uploadFile }) {
       uploadFile.status = fileStatus.resume
       const { taskId } = uploadFile
-      this.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+      this.setUploadFile(uploadFile, taskId)
       this.handleUpload({ uploadFile })
     },
     // 通知服务端合并切片
@@ -338,10 +334,13 @@ export default {
         })
           .then((res) => {
             // 清除storage
-            if (res.data.code === 0) {
+            if (res.code === 0) {
               data.status = fileStatus.success
               clearStorage(data.fileHash)
-              this.$message.success('上传成功')
+              this.$message({
+                type: 'success',
+                message: '上传作业成功!'
+              })
               resolve()
             } else {
               // 文件块数量不对，清除缓存
@@ -373,10 +372,10 @@ export default {
         // 真假进度条处理--处理进度条后移
         if (!currentFile.fakeUploadProgress) {
           currentFile.uploadProgress = currentFileProgress
-          this.$store.commit('task/SET_UPLOADFILE', { rawFile: currentFile, taskId })
+          this.setUploadFile(currentFile, taskId)
         } else if (currentFileProgress > currentFile.fakeUploadProgress) {
           currentFile.uploadProgress = currentFileProgress
-          this.$store.commit('task/SET_UPLOADFILE', { rawFile: currentFile, taskId })
+          this.setUploadFile(currentFile, taskId)
         }
       }
     },
@@ -408,7 +407,6 @@ export default {
                 // 存储已上传的切片下标
                 this.addChunkStorage(chunkData[index].fileHash, index)
                 finished++
-                console.log(finished)
                 handler()
               })
               .catch((e) => {
@@ -441,7 +439,7 @@ export default {
           if (finished >= total) {
             uploadFile.status = fileStatus.success
             const { taskId } = uploadFile
-            that.$store.commit('task/SET_UPLOADFILE', { rawFile: uploadFile, taskId })
+            this.setUploadFile(uploadFile, taskId)
             resolve()
           }
         }
@@ -466,22 +464,32 @@ export default {
       return getStorage(name)
     },
     getMyTask () {
-      this.$store.dispatch('task/getMyTask', this.queryInfo)
-        .then(() => {
-        })
-        .catch((e) => {
-          console.log(e)
-        })
+      getMyTasks({
+        params: this.queryInfo
+      }).then(response => {
+        const { data } = response
+        this.myTasks = data.taskList
+        this.count = data.count
+      }).catch(error => {
+        console.log(error)
+      })
+    },
+    setUploadFile (rawFile, taskId) {
+      let taskIndex = -1
+      const targetTask = (this.myTasks.filter((item, index) => {
+        if (item.taskId === taskId) {
+          taskIndex = index
+          return true
+        } else {
+          return false
+        }
+      }))[0]
+      targetTask.uploadFile = rawFile
+      this.$set(this.myTasks, taskIndex, targetTask)
     }
   },
   created () {
     this.getMyTask()
-  },
-  computed: {
-    ...mapState({
-      myTasks: state => state.task.myTasks,
-      count: state => state.task.count
-    })
   }
 }
 </script>

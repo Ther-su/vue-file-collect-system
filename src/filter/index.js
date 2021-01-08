@@ -1,5 +1,6 @@
 import Vue from 'vue'
 Vue.filter('dateFormat', function (originVal) {
+  if (!originVal) return '无'
   const dt = new Date(originVal)
   const y = dt.getFullYear()
   const m = (dt.getMonth() + 1 + '').padStart(2, '0')

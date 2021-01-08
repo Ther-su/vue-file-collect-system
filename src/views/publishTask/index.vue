@@ -51,6 +51,7 @@ import {
   isDeadline
 } from '../../utils/validate'
 import { getGradePeople } from '../../api/grade'
+import { addTask } from '../../api/task'
 import tinymce from '../../components/Tinymce'
 export default {
   name: 'publishTask',
@@ -193,17 +194,15 @@ export default {
             background: 'rgba(0, 0, 0, 0.7)'
           })
           this.taskInfo.publishTime = new Date()
-          this.$store.dispatch('task/addTask', this.taskInfo)
-            .then(() => {
-              loading.close()
-              that.$message({
-                message: '提交成功',
-                type: 'success'
-              })
+          addTask(this.taskInfo).then(res => {
+            loading.close()
+            that.$message({
+              message: '提交成功',
+              type: 'success'
             })
-            .catch(() => {
-              loading.close()
-            })
+          }).catch(error => {
+            console.log(error)
+          })
         } else {
           return false
         }

@@ -40,6 +40,7 @@ module.exports = {
     }
     // before: require('./mock/mock-server.js')
   },
+  // eslint-disable-next-line no-dupe-keys
   configureWebpack: {
     // provide the app's title in webpack's name field, so that
     // it can be accessed in index.html to inject the correct title.

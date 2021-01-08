@@ -64,3 +64,26 @@ export function getSubmitSituation (args) {
     ...args
   })
 }
+
+export function updatePublishedTask (data) {
+  return request({
+    url: '/task/update',
+    method: 'put',
+    data
+  })
+}
+export function downloadOneTask (args) {
+  return request({
+    url: '/task/download',
+    method: 'get',
+    responseType: 'blob',
+    ...args
+  })
+}
+export function deleteOneTask (data) {
+  return request({
+    url: '/task/delete',
+    method: 'delete',
+    data
+  })
+}

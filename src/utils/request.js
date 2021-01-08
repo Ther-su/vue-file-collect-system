@@ -8,6 +8,7 @@ axios.defaults.baseURL = process.env.VUE_APP_BASE_API
 axios.interceptors.response.use(
   response => {
     const res = response.data
+    if (response.headers['content-type'] !== 'application/json; charset=utf-8') return res
     if (res.code === 10005) {
       MessageBox.confirm('登录凭证过期，是否要重新登录', '提示', {
         confirmButtonText: '登录',

@@ -48,7 +48,6 @@ export function isCheckedStudents (checkedStudents) {
 }
 
 export function isDeadline (deadline) {
-  console.log(Date.now(), new Date(deadline).getTime())
   return Date.now() < new Date(deadline).getTime()
 }
 
