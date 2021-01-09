@@ -444,9 +444,6 @@ export default {
           }
 
           if (finished >= total) {
-            uploadFile.status = fileStatus.success
-            const { taskId } = uploadFile
-            this.setUploadFile(uploadFile, taskId)
             resolve()
           }
         }
