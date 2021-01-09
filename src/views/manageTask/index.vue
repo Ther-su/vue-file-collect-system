@@ -141,7 +141,7 @@ export default {
   data () {
     return {
       // eslint-disable-next-line no-template-curly-in-string
-      namingRule: '电子与信息学院${studentNumber}${fullName}毛概作业${studentNumber}A班',
+      namingRule: '毛概作业2019级电子与信息学院${studentNumber}-${fullName}',
       publishedTasks: [],
       count: 0,
       isIndeterminate: false,
@@ -203,7 +203,7 @@ export default {
         type: 'warning'
       }).then(() => {
         deleteOneTask({
-          taskId: task.taskId
+          taskId: task.id
         })
           .then(res => {
             this.$message({
@@ -385,8 +385,8 @@ export default {
     showEditDialog (task) {
       this.editForm = task
       this.$set(this.editForm, 'checkedStudents', this.editForm.submitterList.map(item => item.userId))
-      this.isIndeterminate = this.editForm.submitterList.length > 0
       this.checkAll = this.studentList.length === this.editForm.submitterList.length
+      this.isIndeterminate = this.editForm.submitterList.length > 0 && !this.checkAll
       this.editDialogVisible = true
     },
     async showSumbitSituationDialog (task) {

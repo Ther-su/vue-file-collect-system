@@ -28,7 +28,7 @@ export default {
       loading: false,
       loginForm: {
         userName: '伊藤美来',
-        password: 'SU20000922'
+        password: 'SU123456'
       },
       loginFormRules: {
         userName: [

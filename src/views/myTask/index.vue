@@ -1,6 +1,6 @@
 <template>
   <div class="my-task-container">
-    <el-timeline>
+    <el-timeline v-if="myTasks.length > 0">
       <el-timeline-item :timestamp="item.publishTime | dateFormat" placement="top" v-for="item in myTasks" :key="item.id">
         <el-card>
           <el-collapse accordion>
@@ -67,7 +67,10 @@
           </el-card>
       </el-timeline-item>
     </el-timeline>
-
+    <div v-else class="no-content-box">
+      <el-image :src="require('../../assets/empty.png')"></el-image>
+      这里还空空如也~
+    </div>
     <el-pagination
       small
       background
@@ -167,11 +170,13 @@ export default {
       rawFile.taskId = taskId
       this.setUploadFile(rawFile, taskId)
     },
-    verifyUpload (fileName, fileHash) {
+    verifyUpload (fileName, fileHash, taskId) {
       return new Promise((resolve) => {
         const obj = {
           hash: fileHash,
-          fileName
+          fileName,
+          taskId,
+          submitTime: new Date()
         }
         presenceFileChunk(obj)
           .then((res) => {
@@ -203,7 +208,7 @@ export default {
           uploadFile.status = fileStatus.hashing
           uploadFile.hash = await this.calculateHash({ uploadFile, taskId })
         }
-        const { presence } = await this.verifyUpload(uploadFile.name, uploadFile.hash)
+        const { presence } = await this.verifyUpload(uploadFile.name, uploadFile.hash, uploadFile.taskId)
         if (presence) {
           uploadFile.status = fileStatus.secondPass
           uploadFile.uploadProgress = 100
@@ -336,6 +341,7 @@ export default {
             // 清除storage
             if (res.code === 0) {
               data.status = fileStatus.success
+              this.setUploadFile(data, data.taskId)
               clearStorage(data.fileHash)
               this.$message({
                 type: 'success',
@@ -346,6 +352,7 @@ export default {
               // 文件块数量不对，清除缓存
               clearStorage(data.fileHash)
               data.status = fileStatus.error
+              this.setUploadFile(data, data.taskId)
               resolve()
             }
           })
@@ -531,5 +538,12 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.no-content-box {
+  width: 270px;
+  display: flex;
+  flex-direction: column;
+  margin: 60px auto;
+  align-items: center;
 }
 </style>

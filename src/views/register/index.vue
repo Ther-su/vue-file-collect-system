@@ -43,6 +43,7 @@
 
           <el-form-item class="btns">
             <el-button type="primary" @click="handleRegister" :loading="loading">注册</el-button>
+            <el-button type="default" @click="toLogin">已有账户?去登陆</el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -103,6 +104,7 @@
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleRegister" :loading="loading">注册</el-button>
+            <el-button type="default" @click="toLogin">已有账户?去登陆</el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -128,17 +130,17 @@ export default {
       loading: false,
       studentRegisterForm: {
         userName: 'Ther',
-        password: 'SU20000922',
-        fullName: '苏明炯',
+        password: 'SU123456',
+        fullName: '林峰',
         gender: '1',
         role: 'student',
-        studentNumber: '201930142352',
+        studentNumber: '202030192752',
         gradeId: 'f88cb0a8182934774f73eb9778eeb305'
       },
       adminRegisterForm: {
         studentNumber: '201930167321',
         userName: '伊藤美来',
-        password: 'SU20000922',
+        password: 'SU123456',
         fullName: '伊藤美来',
         gender: '1',
         role: 'admin',
@@ -185,7 +187,7 @@ export default {
         ],
         password: [
           { required: true, message: '请输入登录密码', trigger: 'blur' },
-          { validator: createValidateFn(isPassword, '密码由6-10个字符的字母和汉字组成'), trigger: 'blur' }
+          { validator: createValidateFn(isPassword, '密码由6-10个字符的字符组成'), trigger: 'blur' }
         ],
         gradeName: [
           { required: true, message: '请输入班级', trigger: 'blur' },
@@ -207,6 +209,9 @@ export default {
     }
   },
   methods: {
+    toLogin () {
+      this.$router.push('/login')
+    },
     handleRegister () {
       this.$refs.studentRegisterFormRef.validate(valid => {
         if (valid) {

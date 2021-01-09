@@ -83,7 +83,7 @@ export function downloadOneTask (args) {
 export function deleteOneTask (data) {
   return request({
     url: '/task/delete',
-    method: 'delete',
+    method: 'put',
     data
   })
 }

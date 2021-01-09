@@ -46,7 +46,6 @@
 <script>
 import {
   createValidateFn,
-  isTaskName,
   isCheckedStudents,
   isDeadline
 } from '../../utils/validate'
@@ -77,7 +76,7 @@ export default {
       taskFormRules: {
         taskName: [
           { required: true, message: '请输入作业名称', trigger: 'blur' },
-          { validator: createValidateFn(isTaskName, '作业名称为2-20个字符的数字、字母、汉字'), trigger: 'blur' }
+          { min: 2, max: 20, message: '长度在 2 到 10 个字符', trigger: 'blur' }
         ],
         taskContent: [
           { required: true, message: '请输入作业内容', trigger: 'blur' }

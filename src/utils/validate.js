@@ -35,13 +35,13 @@ export function isPassword (password) {
   return /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,20}$/.test(password)
 }
 
-export function isTaskName (taskName) {
-  return /^[\u4E00-\u9FA5a-zA-Z0-9]{2,20}$/.test(taskName)
-}
+// export function isTaskName (taskName) {
+//   return /^[\u4E00-\u9FA5a-zA-Z0-9]{2,20}$/.test(taskName)
+// }
 
-export function isTaskContent (taskContent) {
-  return /^[\u4E00-\u9FA5a-zA-Z0-9]{2,50}$/.test(taskContent)
-}
+// export function isTaskContent (taskContent) {
+//   return /^[\u4E00-\u9FA5a-zA-Z0-9]{2,50}$/.test(taskContent)
+// }
 
 export function isCheckedStudents (checkedStudents) {
   return checkedStudents.length > 0

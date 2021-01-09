@@ -5,6 +5,7 @@ const Login = () => import(/* webpackChunkName: "login" */ '@/views/login')
 const Register = () => import(/* webpackChunkName: "register" */ '@/views/register')
 const Profile = () => import(/* webpackChunkName: "profile" */ '@/views/profile')
 const MyTask = () => import(/* webpackChunkName: "myTask" */ '@/views/myTask')
+const ErrorPage = () => import(/* webpackChunkName: "404" */ '@/views/404')
 const PublishTask = () => import(/* webpackChunkName: "publishTask" */ '@/views/publishTask')
 const ManageTask = () => import(/* webpackChunkName: "manageTask" */ '@/views/manageTask')
 
@@ -18,6 +19,15 @@ export const constantRoutes = [
     component: Login,
     meta: {
       title: '登录'
+    }
+  },
+  {
+    path: '/404',
+    name: 'Error',
+    hidden: true,
+    component: ErrorPage,
+    meta: {
+      title: '没有找到页面'
     }
   },
   {
@@ -96,7 +106,8 @@ export const asyncRoutes = [
         }
       }
     ]
-  }
+  },
+  { path: '*', redirect: '/404' }
 ]
 
 const createRouter = () => new VueRouter({
